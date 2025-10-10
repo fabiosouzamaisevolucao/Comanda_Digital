@@ -13,11 +13,19 @@ const { createClient } = require('@supabase/supabase-js')
 const fs = require('fs')
 const path = require('path')
 
-// Load environment variables
-require('dotenv').config()
+// Read .env file manually
+const envPath = path.join(__dirname, '.env')
+const envContent = fs.readFileSync(envPath, 'utf8')
+const envVars = {}
+envContent.split('\n').forEach(line => {
+  const match = line.match(/^([^=]+)=(.*)$/)
+  if (match) {
+    envVars[match[1].trim()] = match[2].trim()
+  }
+})
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabaseUrl = envVars.NEXT_PUBLIC_SUPABASE_URL
+const supabaseServiceKey = envVars.SUPABASE_SERVICE_ROLE_KEY
 
 if (!supabaseUrl || !supabaseServiceKey) {
   console.error('❌ ERROR: Missing Supabase credentials in .env file')
