@@ -41,32 +41,75 @@ async function handleRoute(request, { params }) {
         return NextResponse.json({ products: data || [] }, { headers: corsHeaders })
       }
 
-      // Get comanda by ID
-      if (route === '/comandas') {
-        const id = searchParams.get('id')
-        
-        if (id) {
-          const { data, error } = await supabase
-            .from('comandas')
-            .select('*')
-            .eq('id', id)
-            .single()
+     // Get comanda by ID / List all
+if (route === '/comandas') {
+  const id = searchParams.get('id')
 
-          if (error) throw error
+  // 1) Buscar UMA comanda
+  if (id) {
+    const { data, error } = await supabase
+      .from('comandos') // <-- tabela no BD
+      .select('*')
+      .eq('id', id)
+      .single()
 
-          return NextResponse.json({ comanda: data }, { headers: corsHeaders })
+    if (error) throw error
+
+    // mapear PT -> EN para o front
+    const comanda = data
+      ? {
+          id: data.id,
+          customer_name: data.nome_do_cliente,
+          customer_phone: data.cliente_whatsapp,
+          table_number: data.numero_da_tabela,
+          status: data.status,
+          created_at: data.criado_em,
         }
+      : null
 
-        // Get all comandas
-        const { data, error } = await supabase
-          .from('comandas')
-          .select('*')
-          .order('created_at', { ascending: false })
+    return NextResponse.json({ comanda }, { headers: corsHeaders })
+  }
 
-        if (error) throw error
+  // 2) Listar TODAS as comandas
+  const { data, error } = await supabase
+    .from('comandos') // <-- tabela no BD
+    .select('*')
+    .order('criado_em', { ascending: false })
 
-        return NextResponse.json({ comandas: data || [] }, { headers: corsHeaders })
-      }
+  if (error) throw error
+
+  // mapear lista PT -> EN
+  const comandas = (data || []).map((row) => ({
+    id: row.id,
+    customer_name: row.nome_do_cliente,
+    customer_phone: row.cliente_whatsapp,
+    table_number: row.numero_da_tabela,
+    status: row.status,
+    created_at: row.criado_em,
+  }))
+
+  return NextResponse.json({ comandas }, { headers: corsHeaders })
+}
+
+       // // Get all comandas
+const { data: listData, error: listError } = await supabase
+  .from('comandos')              // <-- tabela no BD
+  .select('*')
+  .order('criado_em', { ascending: false });
+
+if (listError) throw listError;
+
+// mapear PT -> EN para o front
+const comandas = (listData || []).map(d => ({
+  id: d.id,
+  customer_name: d.nome_do_cliente,
+  customer_phone: d.cliente_whatsapp,
+  table_number: d.numero_da_tabela,
+  status: d.status,
+  created_at: d.criado_em,
+}));
+
+return NextResponse.json({ comandas }, { headers: corsHeaders });
 
       // Get comanda items
       if (route === '/comanda-items') {
