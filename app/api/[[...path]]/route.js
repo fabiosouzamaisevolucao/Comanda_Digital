@@ -136,34 +136,37 @@ async function handleRoute(request, { params }) {
     if (method === 'POST') {
       const body = await request.json()
 
-      // Create comanda
-      if (route === '/comandas') {
-        const comandaId = uuidv4()
-        
-        const { data, error } = await supabase
-          .from('comandas')
-          .insert([{
-            id: comandaId,
-            customer_name: body.customer_name,
-            customer_phone: body.customer_phone,
-            table_number: parseInt(body.table_number),
-            status: 'active',
-            total_amount: 0,
-            service_charge_applied: false
-          }])
-          .select()
-          .single()
+     // Create comanda
+if (route === '/comandas') {
+  const comandaId = uuidv4();
 
-        if (error) throw error
+  // 🔁 mapeia os campos do front (em inglês) para as colunas existentes no BD (português)
+  const insertPayload = {
+    id: comandaId,
+    nome_do_cliente: body.customer_name,
+    cliente_whatsapp: body.customer_phone,
+    numero_da_tabela: parseInt(body.table_number, 10),
+    status: 'aberta', // sua tabela usa 'aberta' por padrão
+  };
 
-        // Update table status
-        await supabase
-          .from('tables')
-          .update({ status: 'occupied' })
-          .eq('table_number', parseInt(body.table_number))
+  const { data, error } = await supabase
+    .from('comandos')               // 👈 tabela existente no seu BD
+    .insert([insertPayload])
+    .select()
+    .single();
 
-        return NextResponse.json({ comanda: data }, { headers: corsHeaders })
-      }
+  if (error) throw error;
+
+  // (opcional) Atualizar status da mesa. 
+  // Se sua tabela de mesas for 'tables' com coluna 'table_number', mantenha como está.
+  // Se for 'tabelas' e 'numero_da_tabela', ajuste as duas strings abaixo:
+  await supabase
+    .from('tables')
+    .update({ status: 'occupied' })
+    .eq('table_number', parseInt(body.table_number, 10));
+
+  return NextResponse.json({ comanda: data }, { headers: corsHeaders });
+}
 
       // Add item to comanda
       if (route === '/comanda-items') {
