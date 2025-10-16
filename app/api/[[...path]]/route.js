@@ -27,19 +27,32 @@ async function handleRoute(request, { params }) {
   try {
     // GET HANDLERS
     if (method === 'GET') {
-      // Get all products
-      if (route === '/products') {
-        const { data, error } = await supabase
-          .from('products')
-          .select('*')
-          .eq('available', true)
-          .order('category', { ascending: true })
-          .order('name', { ascending: true })
+     // Get all products (mapeando de menu_items -> products)
+if (route === '/products') {
+  const { data, error } = await supabase
+    .from('menu_items')                      // <-- tabela correta
+    .select('*')
+    .eq('is_active', true)                   // available -> is_active
+    .order('position', { ascending: true })  // organiza por posição
+    .order('name', { ascending: true });
 
-        if (error) throw error
+  if (error) throw error;
 
-        return NextResponse.json({ products: data || [] }, { headers: corsHeaders })
-      }
+  // PT -> EN para o front
+  const products =
+    (data || []).map(d => ({
+      id: d.id,
+      name: d.name,
+      category: d.category_id,               // category (front) <- category_id
+      price: d.price === null ? null : Number(d.price),
+      is_variable_price: false,              // não há coluna p/ isso
+      description: d.description,
+      image_url: d.image_url,
+      available: d.is_active,                // available (front) <- is_active
+    }));
+
+  return NextResponse.json({ products }, { headers: corsHeaders });
+}
 
      // Get comanda by ID / List all
 if (route === '/comandas') {
@@ -349,30 +362,44 @@ if (route === '/comandas') {
         }, { headers: corsHeaders })
       }
 
-      // Create product
-      if (route === '/products') {
-        const productId = uuidv4()
+      // Create product (gravando em menu_items e devolvendo no formato esperado pelo front)
+if (route === '/products') {
+  const productId = uuidv4();
 
-        const { data, error } = await supabase
-          .from('products')
-          .insert([{
-            id: productId,
-            name: body.name,
-            category: body.category,
-            price: body.price || null,
-            is_variable_price: body.is_variable_price || false,
-            description: body.description || null,
-            image_url: body.image_url || null,
-            available: body.available !== false
-          }])
-          .select()
-          .single()
+  const insertPayload = {
+    id: productId,
+    name: body.name,
+    category_id: body.category,        // category (front) -> category_id
+    price: body.price ?? null,
+    description: body.description ?? null,
+    image_url: body.image_url ?? null,
+    is_active: body.available !== false,
+    position: body.position ?? 0,
+  };
 
-        if (error) throw error
+  const { data, error } = await supabase
+    .from('menu_items')
+    .insert([insertPayload])
+    .select()
+    .single();
 
-        return NextResponse.json({ product: data }, { headers: corsHeaders })
-      }
+  if (error) throw error;
 
+  // PT -> EN para o front
+  const product = {
+    id: data.id,
+    name: data.name,
+    category: data.category_id,
+    price: data.price === null ? null : Number(data.price),
+    is_variable_price: false,
+    description: data.description,
+    image_url: data.image_url,
+    available: data.is_active,
+  };
+
+  return NextResponse.json({ product }, { headers: corsHeaders });
+}
+      
       // Create table
       if (route === '/tables') {
         const tableId = uuidv4()
