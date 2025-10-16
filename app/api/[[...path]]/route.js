@@ -27,29 +27,40 @@ async function handleRoute(request, { params }) {
   try {
     // GET HANDLERS
     if (method === 'GET') {
-     // Get all products (mapeando de menu_items -> products)
+    // Get all products (from menu_items/menu_categories)
 if (route === '/products') {
-  const { data, error } = await supabase
-    .from('menu_items')                      // <-- tabela correta
-    .select('*')
-    .eq('is_active', true)                   // available -> is_active
-    .order('position', { ascending: true })  // organiza por posição
-    .order('name', { ascending: true });
+  // busca itens + categoria
+  const { data: items, error: itemsError } = await supabase
+    .from('menu_items')                     // <-- sua tabela
+    .select(`
+      id,
+      name,
+      description,
+      price,
+      image_url,
+      is_active,
+      position,
+      category:menu_categories!inner (      -- join pela FK category_id
+        id,
+        name
+      )
+    `)
+    .eq('is_active', true)
+    .order('position', { ascending: true });
 
-  if (error) throw error;
+  if (itemsError) throw itemsError;
 
-  // PT -> EN para o front
-  const products =
-    (data || []).map(d => ({
-      id: d.id,
-      name: d.name,
-      category: d.category_id,               // category (front) <- category_id
-      price: d.price === null ? null : Number(d.price),
-      is_variable_price: false,              // não há coluna p/ isso
-      description: d.description,
-      image_url: d.image_url,
-      available: d.is_active,                // available (front) <- is_active
-    }));
+  // mapeia para o formato que o front espera
+  const products = (items || []).map((it) => ({
+    id: it.id,
+    name: it.name,
+    description: it.description,
+    price: it.price,
+    image_url: it.image_url,
+    available: true,                        // is_active já filtrou
+    is_variable_price: false,               // ajuste se tiver essa coluna
+    category: it.category?.name || 'Outros' // front espera "category"
+  }));
 
   return NextResponse.json({ products }, { headers: corsHeaders });
 }
