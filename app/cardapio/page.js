@@ -165,7 +165,7 @@ export default function CardapioPage() {
           </TabsList>
 
           <TabsContent value="food" className="mt-6 space-y-4">
-            {filterByCategory('food').map(product => (
+  {filterByCategory("Alimentação").map(product => (
               <Card key={product.id} className="bg-gray-900 border-yellow-600/20 hover:border-yellow-500/50 transition-all cursor-pointer" onClick={() => openProductDialog(product)}>
                 <CardContent className="p-4">
                   <div className="flex items-start gap-4">
@@ -196,8 +196,8 @@ export default function CardapioPage() {
             ))}
           </TabsContent>
 
-          <TabsContent value="drinks" className="mt-6 space-y-4">
-            {filterByCategory('drinks').map(product => (
+        <TabsContent value="drinks" className="mt-6 space-y-4">
+  {filterByCategory("Bebidas").map(product => (
               <Card key={product.id} className="bg-gray-900 border-yellow-600/20 hover:border-yellow-500/50 transition-all cursor-pointer" onClick={() => openProductDialog(product)}>
                 <CardContent className="p-4">
                   <div className="flex items-start gap-4">
@@ -229,7 +229,7 @@ export default function CardapioPage() {
           </TabsContent>
 
           <TabsContent value="other" className="mt-6 space-y-4">
-            {filterByCategory('other').map(product => (
+  {filterByCategory("Outros").map(product => (
               <Card key={product.id} className="bg-gray-900 border-yellow-600/20 hover:border-yellow-500/50 transition-all cursor-pointer" onClick={() => openProductDialog(product)}>
                 <CardContent className="p-4">
                   <div className="flex items-start gap-4">
